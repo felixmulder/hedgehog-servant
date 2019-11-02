@@ -20,17 +20,25 @@ import           Servant.API (reflectMethod)
 import           Servant.API.ContentTypes (AllMimeRender(..))
 import           Servant.Client (BaseUrl(..), Scheme(..))
 
--- | Simple getter from the HList
-class HasGen gens g where
-  getGen :: gens -> Gen g
+data HList a where
+  HNil :: HList '[]
+  (:*:) :: Gen x -> HList xs -> HList (Gen x ': xs)
 
--- | The id instance for HasGen
-instance HasGen (Gen g) g where
-  getGen = id
+infixr 6 :*:
+
+-- | Simple getter from an HList of possible generators
+class HasGen g gens where
+  getGen :: HList gens -> Gen g
+
+instance {-# OVERLAPPING #-} HasGen h (Gen h ': rest) where
+  getGen (ha :*: _) = ha
+
+instance {-# OVERLAPPABLE #-} (HasGen h rest) => HasGen h (first ': rest) where
+  getGen (_ :*: hs) = getGen hs
 
 -- | Type class used to generate requests from `gens` for API `api`
-class GenRequest api gens where
-  genRequest :: Proxy api -> gens -> Gen (BaseUrl -> Request)
+class GenRequest api (gens :: [*]) where
+  genRequest :: Proxy api -> HList gens -> Gen (BaseUrl -> Request)
 
 -- | Instance for composite APIs
 instance
@@ -67,22 +75,22 @@ instance
 -- | Instance for path capture
 instance
   ( ToHttpApiData a
-  , HasGen gens a
+  , HasGen a gens
   , GenRequest api gens
   ) => GenRequest (Capture' modifiers sym a :> api) gens where
     genRequest _ gens = do
-      capture <- toUrlPiece <$> getGen @gens @a gens
+      capture <- toUrlPiece <$> getGen @a @gens gens
       makeRequest <- genRequest (Proxy @api) gens
       pure $ prependPath capture . makeRequest
 
 -- | Instance for request body
 instance
   ( AllMimeRender contentTypes body
-  , HasGen gens body
+  , HasGen body gens
   , GenRequest api gens
   ) => GenRequest (ReqBody' mods contentTypes body :> api) gens where
     genRequest _ gens = do
-      newBody <- getGen @gens @body gens
+      newBody <- getGen @body @gens gens
 
       (contentType, body) <-
         Gen.element $ allMimeRender (Proxy @contentTypes) newBody
