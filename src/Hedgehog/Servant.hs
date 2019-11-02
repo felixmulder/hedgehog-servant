@@ -10,8 +10,10 @@ import qualified Hedgehog.Gen as Gen
 import           Network.HTTP.Media (renderHeader)
 import           Network.HTTP.Client (Request(..), RequestBody(..))
 import           Network.HTTP.Client (defaultRequest)
+import           Servant.API (ToHttpApiData(..))
+import           Servant.API (Capture', Description, Summary)
 import           Servant.API (ReqBody', Verb, ReflectMethod)
-import           Servant.API ((:>))
+import           Servant.API ((:>), (:<|>))
 import           Servant.API (reflectMethod)
 import           Servant.API.ContentTypes (AllMimeRender(..))
 import           Servant.Client (BaseUrl(..), Scheme(..))
@@ -28,6 +30,30 @@ instance HasGen (Gen g) g where
 class GenRequest api gens where
   genRequest :: Proxy api -> gens -> Gen (BaseUrl -> Request)
 
+-- | Instance for composite APIs
+instance
+  ( GenRequest a reqs
+  , GenRequest b reqs
+  ) => GenRequest (a :<|> b) reqs where
+  genRequest _ gens =
+    Gen.choice
+      [ genRequest (Proxy @a) gens
+      , genRequest (Proxy @b) gens
+      ]
+
+-- | Instance for description
+instance
+  ( GenRequest api reqs
+  ) => GenRequest (Description d :> api) reqs where
+  genRequest _ = genRequest (Proxy @api)
+
+-- | Instance for summary
+instance
+  ( GenRequest api reqs
+  ) => GenRequest (Summary s :> api) reqs where
+  genRequest _ = genRequest (Proxy @api)
+
+-- | Instance for path part of API
 instance
   ( KnownSymbol path
   , GenRequest api reqs
@@ -37,11 +63,29 @@ instance
     pure $ \baseUrl ->
       let
         partialReq = makeRequest baseUrl
-        partialUrl = BS.dropWhile (== BS.c2w '/') .  path $ partialReq
+        partialUrl = BS.dropWhile (== BS.c2w '/') . path $ partialReq
         urlPieces = filter (not . BS.null) [cs . symbolVal $ Proxy @path, partialUrl]
       in
         partialReq { path = "/" <> BS.intercalate "/" urlPieces }
 
+-- | Instance for path capture
+instance
+  ( ToHttpApiData a
+  , HasGen gens a
+  , GenRequest api gens
+  ) => GenRequest (Capture' modifiers sym a :> api) gens where
+    genRequest _ gens = do
+      capture <- toUrlPiece <$> getGen @gens @a gens
+      makeRequest <- genRequest (Proxy @api) gens
+      pure $ \baseUrl ->
+        let
+          partialReq = makeRequest baseUrl
+          partialUrl = BS.dropWhile (== BS.c2w '/') . path $ partialReq
+          urlPieces = filter (not . BS.null) [cs capture, partialUrl]
+        in
+          partialReq { path = "/" <> BS.intercalate "/" urlPieces }
+
+-- | Instance for request body
 instance
   ( AllMimeRender contentTypes body
   , HasGen gens body
