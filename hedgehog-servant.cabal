@@ -1,0 +1,115 @@
+cabal-version: 3.0
+
+name:
+  hedgehog-servant
+version:
+  0.1.0.0
+synopsis:
+  Hedgehog property testing for Servant APIs
+bug-reports:
+  https://github.com/felixmulder/hedgehog-servant
+license:
+  BSD-3-Clause
+license-file:
+  LICENSE
+author:
+  Felix Mulder
+maintainer:
+  felix.mulder@gmail.com
+copyright:
+  Felix Mulder
+category:
+  testing
+build-type:
+  Simple
+extra-source-files:
+  CHANGELOG.md
+
+library
+  default-extensions:
+    DataKinds
+    DeriveGeneric
+    FlexibleContexts
+    FlexibleInstances
+    GADTs
+    KindSignatures
+    MultiParamTypeClasses
+    OverloadedStrings
+    PolyKinds
+    RankNTypes
+    ScopedTypeVariables
+    TypeApplications
+    TypeOperators
+
+  ghc-options:
+    -Wall -Werror -Wredundant-constraints -fhide-source-paths
+
+  exposed-modules:
+    Hedgehog.Servant
+
+  build-depends:
+    , aeson ^>= 1.4.5.0
+    , base >=4.12 && <4.13
+    , bytestring ^>= 0.10.8.2
+    , hedgehog ^>= 1.0
+    , http-client ^>= 0.6.4
+    , http-media ^>= 0.8.0.0
+    , servant ^>= 0.16.2
+    , servant-client ^>= 0.16.0.1
+    , servant-server ^>= 0.16.2
+    , string-conversions ^>= 0.4.0.1
+
+  hs-source-dirs:
+    src
+
+  default-language:
+    Haskell2010
+
+test-suite hedgehog-servant-tests
+  type:
+    exitcode-stdio-1.0
+
+  default-language:
+    Haskell2010
+
+  main-is:
+    Main.hs
+
+  ghc-options:
+    -Wall -Werror -Wredundant-constraints -fhide-source-paths -threaded -O2
+
+  hs-source-dirs:
+    test
+
+  other-modules:
+    Test.Hedgehog.Servant
+
+  default-extensions:
+    DataKinds
+    DeriveGeneric
+    FlexibleContexts
+    FlexibleInstances
+    GADTs
+    KindSignatures
+    MultiParamTypeClasses
+    OverloadedStrings
+    PolyKinds
+    RankNTypes
+    ScopedTypeVariables
+    TypeApplications
+    TypeOperators
+
+  build-depends:
+    , hedgehog-servant
+
+    , aeson ^>= 1.4.5.0
+    , base >=4.12 && <4.13
+    , bytestring ^>= 0.10.8.2
+    , hedgehog ^>= 1.0
+    , http-client ^>= 0.6.4
+    , http-media ^>= 0.8.0.0
+    , servant ^>= 0.16.2
+    , servant-client ^>= 0.16.0.1
+    , servant-server ^>= 0.16.2
+    , string-conversions ^>= 0.4.0.1
+    , text ^>= 1.2.3.1
