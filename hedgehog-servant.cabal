@@ -87,6 +87,7 @@ test-suite hedgehog-servant-tests
   default-extensions:
     DataKinds
     DeriveGeneric
+    DerivingStrategies
     FlexibleContexts
     FlexibleInstances
     GADTs
@@ -98,6 +99,7 @@ test-suite hedgehog-servant-tests
     ScopedTypeVariables
     TypeApplications
     TypeOperators
+    ViewPatterns
 
   build-depends:
     , hedgehog-servant
@@ -108,6 +110,7 @@ test-suite hedgehog-servant-tests
     , hedgehog ^>= 1.0
     , http-client ^>= 0.6.4
     , http-media ^>= 0.8.0.0
+    , http-types ^>= 0.12.3
     , servant ^>= 0.16.2
     , servant-client ^>= 0.16.0.1
     , servant-server ^>= 0.16.2
