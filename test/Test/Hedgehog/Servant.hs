@@ -8,6 +8,7 @@ import           Data.String (IsString)
 import           Data.Proxy (Proxy(..))
 import           Data.Text (Text)
 import           Data.Functor ((<&>))
+import           Data.Foldable (find)
 import           GHC.Generics (Generic)
 import           Servant.API (Capture, ReqBody, JSON, Post)
 import           Servant.API ((:>))
@@ -16,7 +17,7 @@ import           Network.HTTP.Client (Request(..), RequestBody(..))
 import           Network.HTTP.Types (methodPost)
 
 import           Hedgehog (Gen, Property)
-import           Hedgehog (annotateShow, checkParallel, discover, forAll)
+import           Hedgehog (annotate, annotateShow, checkParallel, discover, forAll)
 import           Hedgehog (failure, property, success)
 import           Hedgehog ((===))
 import qualified Hedgehog.Gen as Gen
@@ -69,6 +70,15 @@ prop_check_cat_request = property $ do
   host req === "localhost"
   port req === 8080
   path req === "/my/cats"
+
+  let headers = requestHeaders req
+
+  case find ((== "Content-Type"). fst) headers of
+    Just _ -> success
+    Nothing -> do
+      annotate "Couldn't find \"Content-Type\" header"
+      annotateShow headers
+      failure
 
   case requestBody req of
     RequestBodyLBS (eitherDecode @Cat -> Right _) ->

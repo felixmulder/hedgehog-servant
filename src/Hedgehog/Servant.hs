@@ -1,15 +1,17 @@
 module Hedgehog.Servant where
 
 import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Internal as BS (c2w)
 import           Data.Proxy (Proxy(..))
-import           Data.String.Conversions (cs)
+import           Data.String.Conversions (ConvertibleStrings, cs)
 import           GHC.TypeLits (KnownSymbol, symbolVal)
 import           Hedgehog
 import qualified Hedgehog.Gen as Gen
 import           Network.HTTP.Media (renderHeader)
 import           Network.HTTP.Client (Request(..), RequestBody(..))
 import           Network.HTTP.Client (defaultRequest)
+import           Network.HTTP.Types (HeaderName)
 import           Servant.API (ToHttpApiData(..))
 import           Servant.API (Capture', Description, Summary)
 import           Servant.API (ReqBody', Verb, ReflectMethod)
@@ -60,13 +62,7 @@ instance
   ) => GenRequest (path :> api) reqs where
   genRequest _ gens = do
     makeRequest <- genRequest (Proxy @api) gens
-    pure $ \baseUrl ->
-      let
-        partialReq = makeRequest baseUrl
-        partialUrl = BS.dropWhile (== BS.c2w '/') . path $ partialReq
-        urlPieces = filter (not . BS.null) [cs . symbolVal $ Proxy @path, partialUrl]
-      in
-        partialReq { path = "/" <> BS.intercalate "/" urlPieces }
+    pure $ prependPath (symbolVal $ Proxy @path) . makeRequest
 
 -- | Instance for path capture
 instance
@@ -77,13 +73,7 @@ instance
     genRequest _ gens = do
       capture <- toUrlPiece <$> getGen @gens @a gens
       makeRequest <- genRequest (Proxy @api) gens
-      pure $ \baseUrl ->
-        let
-          partialReq = makeRequest baseUrl
-          partialUrl = BS.dropWhile (== BS.c2w '/') . path $ partialReq
-          urlPieces = filter (not . BS.null) [cs capture, partialUrl]
-        in
-          partialReq { path = "/" <> BS.intercalate "/" urlPieces }
+      pure $ prependPath capture . makeRequest
 
 -- | Instance for request body
 instance
@@ -98,16 +88,10 @@ instance
         Gen.element $ allMimeRender (Proxy @contentTypes) newBody
 
       makeRequest <- genRequest (Proxy @api) gens
-      pure $ \baseUrl ->
-        let
-          baseRequest = makeRequest baseUrl
-          headers = ("Content-Type", renderHeader contentType)
-                  : requestHeaders baseRequest
-        in
-          baseRequest
-            { requestBody = RequestBodyLBS body
-            , requestHeaders = headers
-            }
+
+      pure $ setBody body
+           . addHeader "Content-Type" (renderHeader contentType)
+           . makeRequest
 
 instance
   ( ReflectMethod method
@@ -119,3 +103,23 @@ instance
         , secure = baseUrlScheme baseUrl == Https
         , method = reflectMethod (Proxy @method)
         }
+
+
+setBody :: LBS.ByteString -> Request -> Request
+setBody body oldReq = oldReq { requestBody = RequestBodyLBS body }
+
+addHeader :: HeaderName -> BS.ByteString -> Request -> Request
+addHeader name value oldReq =
+  let
+    headers = (name, value) : requestHeaders oldReq
+  in
+    oldReq { requestHeaders = headers }
+
+-- | Helper function for prepending a new URL piece
+prependPath :: ConvertibleStrings s BS.ByteString => s -> Request -> Request
+prependPath new oldReq =
+  let
+    partialUrl = BS.dropWhile (== BS.c2w '/') . path $ oldReq
+    urlPieces = filter (not . BS.null) [cs new, partialUrl]
+  in
+    oldReq { path = "/" <> BS.intercalate "/" urlPieces }

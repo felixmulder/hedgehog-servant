@@ -40,6 +40,7 @@ library
     ScopedTypeVariables
     TypeApplications
     TypeOperators
+    ViewPatterns
 
   ghc-options:
     -Wall -Werror -Wredundant-constraints -fhide-source-paths
@@ -54,6 +55,7 @@ library
     , hedgehog ^>= 1.0
     , http-client ^>= 0.6.4
     , http-media ^>= 0.8.0.0
+    , http-types ^>= 0.12.3
     , servant ^>= 0.16.2
     , servant-client ^>= 0.16.0.1
     , servant-server ^>= 0.16.2
