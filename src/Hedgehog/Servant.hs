@@ -1,4 +1,8 @@
-module Hedgehog.Servant where
+module Hedgehog.Servant
+  ( GList(..)
+  , HasGen(..)
+  , GenRequest(..)
+  ) where
 
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS
@@ -21,14 +25,27 @@ import           Servant.API (reflectMethod)
 import           Servant.API.ContentTypes (AllMimeRender(..))
 import           Servant.Client (BaseUrl(..), Scheme(..))
 
-data GList a where
+-- | Data structure used in order to specify generators for API
+--
+-- Example usage:
+--
+-- @
+-- type Api = "cats" :> ReqBody '[JSON] Cat :> Post '[JSON] ()
+--
+-- catGen :: Gen Cat
+-- catGen = _
+--
+-- genApi :: Gen (BaseUrl -> Request)
+-- genApi = genRequest (Proxy @Api) (catGen :*: GNil)
+-- @
+data GList (a :: [*]) where
   GNil :: GList '[]
   (:*:) :: Gen x -> GList xs -> GList (Gen x ': xs)
 
 infixr 6 :*:
 
--- | Simple getter from an HList of possible generators
-class HasGen g gens where
+-- | Simple getter from a GList of possible generators
+class HasGen (g :: *) (gens :: [*]) where
   getGen :: GList gens -> Gen g
 
 instance {-# OVERLAPPING #-} HasGen h (Gen h ': rest) where
@@ -37,8 +54,8 @@ instance {-# OVERLAPPING #-} HasGen h (Gen h ': rest) where
 instance {-# OVERLAPPABLE #-} (HasGen h rest) => HasGen h (first ': rest) where
   getGen (_ :*: hs) = getGen hs
 
--- | Type class used to generate requests from `gens` for API `api`
-class GenRequest api (gens :: [*]) where
+-- | Type class used to generate requests from a 'GList gens' for API 'api'
+class GenRequest (api :: *) (gens :: [*]) where
   genRequest :: Proxy api -> GList gens -> Gen (BaseUrl -> Request)
 
 -- | Instance for composite APIs
@@ -86,11 +103,11 @@ instance
 
 -- | Instance for capture rest of path, e.g:
 --
---   @
---   type Api = "cats" :> CaptureAll "rest" Text :> Get '[JSON] [Cat]
---   @
+-- @
+-- type Api = "cats" :> CaptureAll "rest" Text :> Get '[JSON] [Cat]
+-- @
 --
---   For simplicity this will generate a number of paths from 0 to 10 linearly
+-- For simplicity this will generate a number of paths from 0 to 10 linearly
 --
 instance
   ( ToHttpApiData a
