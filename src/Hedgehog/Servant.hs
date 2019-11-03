@@ -22,7 +22,8 @@ import           Network.HTTP.Client (defaultRequest)
 import           Network.HTTP.Types (HeaderName)
 import           Servant.API (ToHttpApiData(..))
 import           Servant.API (Capture', CaptureAll, Header', Description, Summary)
-import           Servant.API (QueryParam', QueryParams, ReqBody', Verb, ReflectMethod)
+import           Servant.API (QueryParam', QueryParams, QueryFlag)
+import           Servant.API (ReqBody', Verb, ReflectMethod)
 import           Servant.API ((:>), (:<|>))
 import           Servant.API (reflectMethod)
 import           Servant.API.ContentTypes (AllMimeRender(..))
@@ -137,6 +138,26 @@ instance
       header <- getGen @header @gens gens
       makeRequest <- genRequest (Proxy @api) gens
       pure $ addHeader headerName (toHeader header) . makeRequest
+
+-- | Instance for setting query flag
+--
+-- /Note: this instance currently makes all query flags mandatory/
+instance
+  ( KnownSymbol name
+  , GenRequest api gens
+  ) => GenRequest (QueryFlag name :> api) gens where
+    genRequest _ gens = do
+      let paramName = toUrlPiece . symbolVal $ Proxy @name
+      makeRequest <- genRequest (Proxy @api) gens
+      pure $ \baseUrl ->
+        let
+          partialReq = makeRequest baseUrl
+          oldQuery = decodeUtf8 $ queryString partialReq
+          newQuery =
+            if Text.null oldQuery then paramName
+            else paramName <> "&" <> oldQuery
+        in
+          partialReq { queryString = encodeUtf8 newQuery }
 
 -- | Instance for setting query parameters
 --

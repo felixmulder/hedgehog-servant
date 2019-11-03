@@ -13,7 +13,7 @@ import           Data.Functor ((<&>))
 import           Data.Foldable (find)
 import           GHC.Generics (Generic)
 import           Servant.API (Capture, ReqBody, Header, JSON)
-import           Servant.API (QueryParam, QueryParams)
+import           Servant.API (QueryFlag, QueryParam, QueryParams)
 import           Servant.API (Post)
 import           Servant.API ((:>), (:<|>))
 import           Servant.Client (BaseUrl(..), Scheme(..))
@@ -141,6 +141,19 @@ prop_has_correlation_id = property $ do
   case find ((== "Correlation-Id") . fst) (requestHeaders req) of
     Just _ -> success
     Nothing -> failure
+
+type QueryFlagApi =
+  "my" :> "cats" :> QueryFlag "foo" :> QueryFlag "fi" :> Post '[JSON] ()
+
+queryFlagGen :: BaseUrl -> Gen Request
+queryFlagGen baseUrl =
+  genRequest (Proxy @QueryFlagApi) GNil <&>
+    \makeReq -> makeReq baseUrl
+
+prop_has_query_Flag :: Property
+prop_has_query_Flag = property $ do
+  req <- forAll (queryFlagGen defaultBaseUrl)
+  queryString req === "foo&fi"
 
 type QueryParamApi =
   "my" :> "cats" :> QueryParam "foo" Text :> QueryParam "fi" Text :> Post '[JSON] ()
