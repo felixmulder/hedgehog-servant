@@ -22,7 +22,7 @@ import           Network.HTTP.Client (defaultRequest)
 import           Network.HTTP.Types (HeaderName)
 import           Servant.API (ToHttpApiData(..))
 import           Servant.API (Capture', CaptureAll, Header', Description, Summary)
-import           Servant.API (QueryParam', ReqBody', Verb, ReflectMethod)
+import           Servant.API (QueryParam', QueryParams, ReqBody', Verb, ReflectMethod)
 import           Servant.API ((:>), (:<|>))
 import           Servant.API (reflectMethod)
 import           Servant.API.ContentTypes (AllMimeRender(..))
@@ -162,6 +162,32 @@ instance
           newQuery =
             if Text.null oldQuery then query
             else query <> "&" <> oldQuery
+        in
+          partialReq { queryString = encodeUtf8 newQuery }
+
+-- | Instance for generating query parameters for arrays of values
+instance
+  ( KnownSymbol paramName
+  , HasGen param gens
+  , ToHttpApiData param
+  , GenRequest api gens
+  ) => GenRequest (QueryParams paramName param :> api) gens where
+    genRequest _ gens = do
+      params <- Gen.list (Range.linear 1 20) (getGen @param @gens gens)
+
+      let
+        paramName = toUrlPiece . symbolVal $ Proxy @paramName
+        params' = fmap (((paramName <> "[]=") <>) . toUrlPiece) params
+        queryParams = Text.intercalate "&" params'
+
+      makeRequest <- genRequest (Proxy @api) gens
+      pure $ \baseUrl ->
+        let
+          partialReq = makeRequest baseUrl
+          oldQuery = decodeUtf8 $ queryString partialReq
+          newQuery =
+            if Text.null oldQuery then queryParams
+            else queryParams <> "&" <> oldQuery
         in
           partialReq { queryString = encodeUtf8 newQuery }
 

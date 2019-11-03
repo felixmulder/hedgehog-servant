@@ -3,14 +3,17 @@ module Test.Hedgehog.Servant
   ( tests
   ) where
 
+import           Control.Monad (forM_)
 import           Data.Aeson (FromJSON, ToJSON, eitherDecode)
 import           Data.String (IsString)
 import           Data.Proxy (Proxy(..))
-import           Data.Text (Text)
+import           Data.Text (Text, splitOn)
+import           Data.Text.Encoding (decodeUtf8)
 import           Data.Functor ((<&>))
 import           Data.Foldable (find)
 import           GHC.Generics (Generic)
-import           Servant.API (Capture, ReqBody, Header, JSON, QueryParam)
+import           Servant.API (Capture, ReqBody, Header, JSON)
+import           Servant.API (QueryParam, QueryParams)
 import           Servant.API (Post)
 import           Servant.API ((:>), (:<|>))
 import           Servant.Client (BaseUrl(..), Scheme(..))
@@ -139,7 +142,7 @@ prop_has_correlation_id = property $ do
     Just _ -> success
     Nothing -> failure
 
-type QueryParams =
+type QueryParamApi =
   "my" :> "cats" :> QueryParam "foo" Text :> QueryParam "fi" Text :> Post '[JSON] ()
 
 queryParamGen :: BaseUrl -> Gen Request
@@ -148,13 +151,33 @@ queryParamGen baseUrl =
     paramGen :: Gen Text
     paramGen = pure "bar"
   in
-    genRequest (Proxy @QueryParams) (paramGen :*: GNil) <&>
+    genRequest (Proxy @QueryParamApi) (paramGen :*: GNil) <&>
       \makeReq -> makeReq baseUrl
 
 prop_has_query_param :: Property
 prop_has_query_param = property $ do
   req <- forAll (queryParamGen defaultBaseUrl)
   queryString req === "foo=bar&fi=bar"
+
+type QueryParamsApi =
+  "my" :> "cats" :> QueryParams "foo" Text :> Post '[JSON] ()
+
+queryParamsGen :: BaseUrl -> Gen Request
+queryParamsGen baseUrl =
+  let
+    paramGen :: Gen Text
+    paramGen = pure "bar"
+  in
+    genRequest (Proxy @QueryParamsApi) (paramGen :*: GNil) <&>
+      \makeReq -> makeReq baseUrl
+
+prop_has_query_params :: Property
+prop_has_query_params = property $ do
+  queryParams <-
+    decodeUtf8 . queryString <$>
+      forAll (queryParamsGen defaultBaseUrl)
+
+  forM_ (splitOn "&" queryParams) (=== "foo[]=bar")
 
 propCat :: Request -> PropertyT IO ()
 propCat req = do
