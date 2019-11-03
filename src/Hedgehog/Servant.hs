@@ -24,6 +24,8 @@ import           Servant.API (ToHttpApiData(..))
 import           Servant.API (Capture', CaptureAll, Header', Description, Summary)
 import           Servant.API (QueryParam', QueryParams, QueryFlag)
 import           Servant.API (ReqBody', Verb, ReflectMethod)
+import           Servant.API (BasicAuth, HttpVersion, IsSecure, RemoteHost, Vault)
+import           Servant.API (WithNamedContext)
 import           Servant.API ((:>), (:<|>))
 import           Servant.API (reflectMethod)
 import           Servant.API.ContentTypes (AllMimeRender(..))
@@ -241,6 +243,60 @@ instance
         , secure = baseUrlScheme baseUrl == Https
         , method = reflectMethod (Proxy @method)
         }
+
+-- | This instance doees not do anything right now
+--
+-- /Note:/ in order to use features provided by this type in the API, you'll
+-- need to manually adjust the generated request.
+instance
+  ( GenRequest api gens
+  ) => GenRequest (BasicAuth x y :> api) gens where
+    genRequest _ gens = genRequest (Proxy @api) gens
+
+-- | This instance doees not do anything right now
+--
+-- /Note:/ in order to use features provided by this type in the API, you'll
+-- need to manually adjust the generated request.
+instance
+  ( GenRequest api gens
+  ) => GenRequest (HttpVersion :> api) gens where
+    genRequest _ gens = genRequest (Proxy @api) gens
+
+-- | This instance doees not do anything right now
+--
+-- /Note:/ in order to use features provided by this type in the API, you'll
+-- need to manually adjust the generated request.
+instance
+  ( GenRequest api gens
+  ) => GenRequest (IsSecure :> api) gens where
+    genRequest _ gens = genRequest (Proxy @api) gens
+
+-- | This instance doees not do anything right now
+--
+-- /Note:/ in order to use features provided by this type in the API, you'll
+-- need to manually adjust the generated request.
+instance
+  ( GenRequest api gens
+  ) => GenRequest (RemoteHost :> api) gens where
+    genRequest _ gens = genRequest (Proxy @api) gens
+
+-- | This instance doees not do anything right now
+--
+-- /Note:/ in order to use features provided by this type in the API, you'll
+-- need to manually adjust the generated request.
+instance
+  ( GenRequest api gens
+  ) => GenRequest (Vault :> api) gens where
+    genRequest _ gens = genRequest (Proxy @api) gens
+
+-- | This instance doees not do anything right now
+--
+-- /Note:/ in order to use features provided by this type in the API, you'll
+-- need to manually adjust the generated request.
+instance
+  ( GenRequest api gens
+  ) => GenRequest (WithNamedContext x y api) gens where
+    genRequest _ gens = genRequest (Proxy @api) gens
 
 setBody :: LBS.ByteString -> Request -> Request
 setBody body oldReq = oldReq { requestBody = RequestBodyLBS body }
