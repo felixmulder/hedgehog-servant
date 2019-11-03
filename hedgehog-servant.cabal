@@ -61,6 +61,7 @@ library
     , servant-client ^>= 0.16.0.1
     , servant-server ^>= 0.16.2
     , string-conversions ^>= 0.4.0.1
+    , text ^>= 1.2.3.1
 
   hs-source-dirs:
     src

@@ -10,7 +10,7 @@ import           Data.Text (Text)
 import           Data.Functor ((<&>))
 import           Data.Foldable (find)
 import           GHC.Generics (Generic)
-import           Servant.API (Capture, ReqBody, Header, JSON)
+import           Servant.API (Capture, ReqBody, Header, JSON, QueryParam)
 import           Servant.API (Post)
 import           Servant.API ((:>), (:<|>))
 import           Servant.Client (BaseUrl(..), Scheme(..))
@@ -138,6 +138,23 @@ prop_has_correlation_id = property $ do
   case find ((== "Correlation-Id") . fst) (requestHeaders req) of
     Just _ -> success
     Nothing -> failure
+
+type QueryParams =
+  "my" :> "cats" :> QueryParam "foo" Text :> QueryParam "fi" Text :> Post '[JSON] ()
+
+queryParamGen :: BaseUrl -> Gen Request
+queryParamGen baseUrl =
+  let
+    paramGen :: Gen Text
+    paramGen = pure "bar"
+  in
+    genRequest (Proxy @QueryParams) (paramGen :*: GNil) <&>
+      \makeReq -> makeReq baseUrl
+
+prop_has_query_param :: Property
+prop_has_query_param = property $ do
+  req <- forAll (queryParamGen defaultBaseUrl)
+  queryString req === "foo=bar&fi=bar"
 
 propCat :: Request -> PropertyT IO ()
 propCat req = do

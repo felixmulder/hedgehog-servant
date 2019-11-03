@@ -9,6 +9,8 @@ import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Internal as BS (c2w)
 import qualified Data.CaseInsensitive as CI
 import           Data.Proxy (Proxy(..))
+import           Data.Text.Encoding (encodeUtf8, decodeUtf8)
+import qualified Data.Text as Text
 import           Data.String.Conversions (ConvertibleStrings, cs)
 import           GHC.TypeLits (KnownSymbol, symbolVal)
 import           Hedgehog
@@ -20,7 +22,7 @@ import           Network.HTTP.Client (defaultRequest)
 import           Network.HTTP.Types (HeaderName)
 import           Servant.API (ToHttpApiData(..))
 import           Servant.API (Capture', CaptureAll, Header', Description, Summary)
-import           Servant.API (ReqBody', Verb, ReflectMethod)
+import           Servant.API (QueryParam', ReqBody', Verb, ReflectMethod)
 import           Servant.API ((:>), (:<|>))
 import           Servant.API (reflectMethod)
 import           Servant.API.ContentTypes (AllMimeRender(..))
@@ -135,6 +137,33 @@ instance
       header <- getGen @header @gens gens
       makeRequest <- genRequest (Proxy @api) gens
       pure $ addHeader headerName (toHeader header) . makeRequest
+
+-- | Instance for setting query parameters
+--
+-- /Note: this instance currently makes all query params mandatory/
+instance
+  ( KnownSymbol paramName
+  , ToHttpApiData param
+  , HasGen param gens
+  , GenRequest api gens
+  ) => GenRequest (QueryParam' mods paramName param :> api) gens where
+    genRequest _ gens = do
+      queryParam <- toUrlPiece <$> getGen @param @gens gens
+
+      let
+        paramName = toUrlPiece . symbolVal $ Proxy @paramName
+        query = paramName <> "=" <> queryParam
+
+      makeRequest <- genRequest (Proxy @api) gens
+      pure $ \baseUrl ->
+        let
+          partialReq = makeRequest baseUrl
+          oldQuery = decodeUtf8 $ queryString partialReq
+          newQuery =
+            if Text.null oldQuery then query
+            else query <> "&" <> oldQuery
+        in
+          partialReq { queryString = encodeUtf8 newQuery }
 
 -- | Instance for request body
 instance
