@@ -20,15 +20,15 @@ import           Servant.API (reflectMethod)
 import           Servant.API.ContentTypes (AllMimeRender(..))
 import           Servant.Client (BaseUrl(..), Scheme(..))
 
-data HList a where
-  HNil :: HList '[]
-  (:*:) :: Gen x -> HList xs -> HList (Gen x ': xs)
+data GList a where
+  GNil :: GList '[]
+  (:*:) :: Gen x -> GList xs -> GList (Gen x ': xs)
 
 infixr 6 :*:
 
 -- | Simple getter from an HList of possible generators
 class HasGen g gens where
-  getGen :: HList gens -> Gen g
+  getGen :: GList gens -> Gen g
 
 instance {-# OVERLAPPING #-} HasGen h (Gen h ': rest) where
   getGen (ha :*: _) = ha
@@ -38,7 +38,7 @@ instance {-# OVERLAPPABLE #-} (HasGen h rest) => HasGen h (first ': rest) where
 
 -- | Type class used to generate requests from `gens` for API `api`
 class GenRequest api (gens :: [*]) where
-  genRequest :: Proxy api -> HList gens -> Gen (BaseUrl -> Request)
+  genRequest :: Proxy api -> GList gens -> Gen (BaseUrl -> Request)
 
 -- | Instance for composite APIs
 instance

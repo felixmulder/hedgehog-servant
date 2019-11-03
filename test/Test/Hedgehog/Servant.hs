@@ -10,7 +10,8 @@ import           Data.Text (Text)
 import           Data.Functor ((<&>))
 import           Data.Foldable (find)
 import           GHC.Generics (Generic)
-import           Servant.API (Capture, ReqBody, JSON, Post)
+import           Servant.API (Capture, ReqBody, JSON)
+import           Servant.API (Post)
 import           Servant.API ((:>), (:<|>))
 import           Servant.Client (BaseUrl(..), Scheme(..))
 import           Network.HTTP.Client (Request(..), RequestBody(..))
@@ -22,7 +23,7 @@ import           Hedgehog (failure, property, success)
 import           Hedgehog ((===))
 import qualified Hedgehog.Gen as Gen
 
-import           Hedgehog.Servant (GenRequest(..), HList(..))
+import           Hedgehog.Servant (GenRequest(..), GList(..))
 
 -- A typical cat:
 data Cat = Cat
@@ -50,7 +51,7 @@ type SimplestApi =
 -- Generate a request to the Cat API from a base URL
 catRequestGen :: BaseUrl -> Gen Request
 catRequestGen baseUrl =
-  genRequest (Proxy @SimplestApi) (genCat :*: HNil) <&>
+  genRequest (Proxy @SimplestApi) (genCat :*: GNil) <&>
     \makeReq -> makeReq baseUrl
 
 defaultBaseUrl :: BaseUrl
@@ -70,7 +71,7 @@ type CaptureApi =
 
 captureGen :: Gen Text -> BaseUrl -> Gen Request
 captureGen txt baseUrl =
-  genRequest (Proxy @CaptureApi) (txt :*: HNil) <&>
+  genRequest (Proxy @CaptureApi) (txt :*: GNil) <&>
     \makeReq -> makeReq baseUrl
 
 prop_check_capture_req :: Property
@@ -109,7 +110,7 @@ type AltApi =
 -- Generate a request to the Cat API from a base URL
 altRequestGen :: BaseUrl -> Gen Request
 altRequestGen baseUrl =
-  genRequest (Proxy @AltApi) (genCat :*: genDog :*: HNil) <&>
+  genRequest (Proxy @AltApi) (genCat :*: genDog :*: GNil) <&>
     \makeReq -> makeReq baseUrl
 
 prop_check_alt_api :: Property
