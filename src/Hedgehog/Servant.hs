@@ -8,12 +8,13 @@ import           Data.String.Conversions (ConvertibleStrings, cs)
 import           GHC.TypeLits (KnownSymbol, symbolVal)
 import           Hedgehog
 import qualified Hedgehog.Gen as Gen
+import qualified Hedgehog.Range as Range
 import           Network.HTTP.Media (renderHeader)
 import           Network.HTTP.Client (Request(..), RequestBody(..))
 import           Network.HTTP.Client (defaultRequest)
 import           Network.HTTP.Types (HeaderName)
 import           Servant.API (ToHttpApiData(..))
-import           Servant.API (Capture', Description, Summary)
+import           Servant.API (Capture', CaptureAll, Description, Summary)
 import           Servant.API (ReqBody', Verb, ReflectMethod)
 import           Servant.API ((:>), (:<|>))
 import           Servant.API (reflectMethod)
@@ -82,6 +83,25 @@ instance
       capture <- toUrlPiece <$> getGen @a @gens gens
       makeRequest <- genRequest (Proxy @api) gens
       pure $ prependPath capture . makeRequest
+
+-- | Instance for capture rest of path, e.g:
+--
+--   @
+--   type Api = "cats" :> CaptureAll "rest" Text :> Get '[JSON] [Cat]
+--   @
+--
+--   For simplicity this will generate a number of paths from 0 to 10 linearly
+--
+instance
+  ( ToHttpApiData a
+  , HasGen a gens
+  , GenRequest api gens
+  ) => GenRequest (CaptureAll sym a :> api) gens where
+    genRequest _ gens = do
+      captures <- Gen.list (Range.linear 0 10) (getGen @a @gens gens)
+      makeRequest <- genRequest (Proxy @api) gens
+      pure $ \baseUrl ->
+        foldr (prependPath . toUrlPiece) (makeRequest baseUrl) captures
 
 -- | Instance for request body
 instance
