@@ -7,6 +7,7 @@ module Hedgehog.Servant
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Internal as BS (c2w)
+import qualified Data.CaseInsensitive as CI
 import           Data.Proxy (Proxy(..))
 import           Data.String.Conversions (ConvertibleStrings, cs)
 import           GHC.TypeLits (KnownSymbol, symbolVal)
@@ -18,7 +19,7 @@ import           Network.HTTP.Client (Request(..), RequestBody(..))
 import           Network.HTTP.Client (defaultRequest)
 import           Network.HTTP.Types (HeaderName)
 import           Servant.API (ToHttpApiData(..))
-import           Servant.API (Capture', CaptureAll, Description, Summary)
+import           Servant.API (Capture', CaptureAll, Header', Description, Summary)
 import           Servant.API (ReqBody', Verb, ReflectMethod)
 import           Servant.API ((:>), (:<|>))
 import           Servant.API (reflectMethod)
@@ -120,6 +121,21 @@ instance
       pure $ \baseUrl ->
         foldr (prependPath . toUrlPiece) (makeRequest baseUrl) captures
 
+-- | Instance for headers
+--
+-- /Note: this instance currently makes all headers mandatory/
+instance
+  ( HasGen header gens
+  , KnownSymbol headerName
+  , ToHttpApiData header
+  , GenRequest api gens
+  ) => GenRequest (Header' mods headerName header :> api) gens where
+    genRequest _ gens = do
+      let headerName = CI.mk . cs . symbolVal $ Proxy @headerName
+      header <- getGen @header @gens gens
+      makeRequest <- genRequest (Proxy @api) gens
+      pure $ addHeader headerName (toHeader header) . makeRequest
+
 -- | Instance for request body
 instance
   ( AllMimeRender contentTypes body
@@ -138,6 +154,7 @@ instance
            . addHeader "Content-Type" (renderHeader contentType)
            . makeRequest
 
+-- | Instnace for capturing verb e.g. @POST@ or @GET@
 instance
   ( ReflectMethod method
   ) => GenRequest (Verb method status contentTypes body) gens where
@@ -148,7 +165,6 @@ instance
         , secure = baseUrlScheme baseUrl == Https
         , method = reflectMethod (Proxy @method)
         }
-
 
 setBody :: LBS.ByteString -> Request -> Request
 setBody body oldReq = oldReq { requestBody = RequestBodyLBS body }

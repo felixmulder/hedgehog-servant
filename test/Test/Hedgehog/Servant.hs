@@ -10,7 +10,7 @@ import           Data.Text (Text)
 import           Data.Functor ((<&>))
 import           Data.Foldable (find)
 import           GHC.Generics (Generic)
-import           Servant.API (Capture, ReqBody, JSON)
+import           Servant.API (Capture, ReqBody, Header, JSON)
 import           Servant.API (Post)
 import           Servant.API ((:>), (:<|>))
 import           Servant.Client (BaseUrl(..), Scheme(..))
@@ -120,6 +120,24 @@ prop_check_alt_api = property $ do
     "/my/cats" -> propCat req
     "/dogs" -> propDog req
     badPath -> annotate "Bad path" >> annotateShow badPath >> failure
+
+type HeaderApi = "cats" :> Header "Correlation-Id" Text :> Post '[JSON] ()
+
+headerRequestGen :: BaseUrl -> Gen Request
+headerRequestGen baseUrl =
+  let
+    textGen :: Gen Text
+    textGen = pure "some-corr-id"
+  in
+    genRequest (Proxy @HeaderApi) (textGen :*: GNil) <&>
+      \makeReq -> makeReq baseUrl
+
+prop_has_correlation_id :: Property
+prop_has_correlation_id = property $ do
+  req <- forAll (headerRequestGen defaultBaseUrl)
+  case find ((== "Correlation-Id") . fst) (requestHeaders req) of
+    Just _ -> success
+    Nothing -> failure
 
 propCat :: Request -> PropertyT IO ()
 propCat req = do
