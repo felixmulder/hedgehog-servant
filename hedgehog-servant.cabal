@@ -27,6 +27,10 @@ build-type:
 extra-source-files:
   CHANGELOG.md
 
+source-repository head
+  type: git
+  location: git://github.com/felixmulder/hedgehog-servant.git
+
 library
   default-extensions:
     DataKinds
@@ -45,7 +49,7 @@ library
     ViewPatterns
 
   ghc-options:
-    -Wall -Werror -Wredundant-constraints -fhide-source-paths
+    -Wall -Wredundant-constraints -fhide-source-paths
 
   exposed-modules:
     Hedgehog.Servant
@@ -81,7 +85,7 @@ test-suite hedgehog-servant-tests
     Main.hs
 
   ghc-options:
-    -Wall -Werror -Wredundant-constraints -fhide-source-paths -threaded -O2
+    -Wall -Wredundant-constraints -fhide-source-paths -threaded
 
   hs-source-dirs:
     test
