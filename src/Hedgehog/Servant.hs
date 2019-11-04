@@ -60,7 +60,7 @@ instance {-# OVERLAPPING #-} HasGen h (Gen h ': rest) where
 instance {-# OVERLAPPABLE #-} (HasGen h rest) => HasGen h (first ': rest) where
   getGen (_ :*: hs) = getGen hs
 
--- | Type class used to generate requests from a 'GList gens' for API 'api'
+-- | Type class used to generate requests from a 'GList gens' for API @api@
 class GenRequest (api :: *) (gens :: [*]) where
   genRequest :: Proxy api -> GList gens -> Gen (BaseUrl -> Request)
 

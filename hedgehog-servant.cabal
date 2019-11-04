@@ -49,19 +49,18 @@ library
     Hedgehog.Servant
 
   build-depends:
-    , aeson ^>= 1.4.5.0
-    , base >=4.12 && <4.13
-    , bytestring ^>= 0.10.8.2
-    , case-insensitive ^>= 1.2.1.0
-    , hedgehog ^>= 1.0
-    , http-client ^>= 0.6.4
-    , http-media ^>= 0.8.0.0
-    , http-types ^>= 0.12.3
-    , servant ^>= 0.16.2
-    , servant-client ^>= 0.16.0.1
-    , servant-server ^>= 0.16.2
-    , string-conversions ^>= 0.4.0.1
-    , text ^>= 1.2.3.1
+    , base                      >= 4.9      && < 5
+    , bytestring                >= 0.10     && < 0.11
+    , case-insensitive          >= 1.2      && < 1.3
+    , hedgehog                  >= 0.6      && < 1.1
+    , http-client               >= 0.6      && < 0.7
+    , http-media                >= 0.8      && < 0.9
+    , http-types                >= 0.12     && < 0.13
+    , servant                   >= 0.16     && < 0.17
+    , servant-client            >= 0.16     && < 0.17
+    , servant-server            >= 0.16     && < 0.17
+    , string-conversions        >= 0.4      && < 0.5
+    , text                      >= 1.2      && < 1.3
 
   hs-source-dirs:
     src
@@ -109,15 +108,16 @@ test-suite hedgehog-servant-tests
   build-depends:
     , hedgehog-servant
 
-    , aeson ^>= 1.4.5.0
-    , base >=4.12 && <4.13
-    , bytestring ^>= 0.10.8.2
-    , hedgehog ^>= 1.0
-    , http-client ^>= 0.6.4
-    , http-media ^>= 0.8.0.0
-    , http-types ^>= 0.12.3
-    , servant ^>= 0.16.2
-    , servant-client ^>= 0.16.0.1
-    , servant-server ^>= 0.16.2
-    , string-conversions ^>= 0.4.0.1
-    , text ^>= 1.2.3.1
+    , aeson                     >= 1.4      && < 1.5
+    , base                      >= 4.9      && < 5
+    , bytestring                >= 0.10     && < 0.11
+    , case-insensitive          >= 1.2      && < 1.3
+    , hedgehog                  >= 0.6      && < 1.1
+    , http-client               >= 0.6      && < 0.7
+    , http-media                >= 0.8      && < 0.9
+    , http-types                >= 0.12     && < 0.13
+    , servant                   >= 0.16     && < 0.17
+    , servant-client            >= 0.16     && < 0.17
+    , servant-server            >= 0.16     && < 0.17
+    , string-conversions        >= 0.4      && < 0.5
+    , text                      >= 1.2      && < 1.3
