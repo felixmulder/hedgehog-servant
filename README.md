@@ -34,7 +34,7 @@ catRequestGen baseUrl =
     \makeReq -> makeReq baseUrl
 ```
 
-We construct generator lists with `element1 :*: element-2 :*: ... element-n :*: GNil`,
+We construct generator lists with `element1 :*: element2 :*: ... elementN :*: GNil`,
 where `GNil` denotes the end of the generator list. The `genRequest` function
 will derive a request from the generators in the list. This includes request
 bodies, headers and query parameters.
