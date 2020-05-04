@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 module Hedgehog.Servant
   ( GList(..)
   , HasGen(..)
@@ -30,6 +31,10 @@ import           Servant.API ((:>), (:<|>))
 import           Servant.API (reflectMethod)
 import           Servant.API.ContentTypes (AllMimeRender(..))
 import           Servant.Client (BaseUrl(..), Scheme(..))
+
+#if MIN_VERSION_servant(0, 17, 0)
+import           Servant.API (NoContentVerb)
+#endif
 
 -- | Data structure used in order to specify generators for API
 --
@@ -243,6 +248,19 @@ instance
         , secure = baseUrlScheme baseUrl == Https
         , method = reflectMethod (Proxy @method)
         }
+
+#if MIN_VERSION_servant(0, 17, 0)
+instance
+  ( ReflectMethod method
+  ) => GenRequest (NoContentVerb method) gens where
+    genRequest _ _ =
+      pure $ \baseUrl -> defaultRequest
+        { host = cs . baseUrlHost $ baseUrl
+        , port = baseUrlPort baseUrl
+        , secure = baseUrlScheme baseUrl == Https
+        , method = reflectMethod (Proxy @method)
+        }
+#endif
 
 -- | This instance doees not do anything right now
 --
