@@ -36,6 +36,10 @@ import           Servant.Client (BaseUrl(..), Scheme(..))
 import           Servant.API (NoContentVerb)
 #endif
 
+#if MIN_VERSION_servant(0, 18, 1)
+import           Servant.API (UVerb)
+#endif
+
 -- | Data structure used in order to specify generators for API
 --
 -- Example usage:
@@ -253,6 +257,19 @@ instance
 instance
   ( ReflectMethod method
   ) => GenRequest (NoContentVerb method) gens where
+    genRequest _ _ =
+      pure $ \baseUrl -> defaultRequest
+        { host = cs . baseUrlHost $ baseUrl
+        , port = baseUrlPort baseUrl
+        , secure = baseUrlScheme baseUrl == Https
+        , method = reflectMethod (Proxy @method)
+        }
+#endif
+
+#if MIN_VERSION_servant(0, 18, 1)
+instance
+  ( ReflectMethod method
+  ) => GenRequest (UVerb method contentTypes bodies) gens where
     genRequest _ _ =
       pure $ \baseUrl -> defaultRequest
         { host = cs . baseUrlHost $ baseUrl
