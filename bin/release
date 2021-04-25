@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -e
+
+# create the binary and get the version:
+VERSION=$(cabal sdist | grep hedgehog | sed 's/.*servant-//' | sed 's/\.tar.gz//')
+
+# create the haddock documentation:
+cabal haddock --haddock-for-hackage --haddock-option=--hyperlinked-source
+
+echo "Creating a release for v$VERSION"
+
+# Upload the distribution:
+cabal upload --username=felixmulder --publish dist-newstyle/sdist/hedgehog-servant-$VERSION.tar.gz
+
+# Upload the docs:
+cabal upload --username=felixmulder -d --publish dist-newstyle/hedgehog-servant-$VERSION-docs.tar.gz
