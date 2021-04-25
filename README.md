@@ -1,7 +1,7 @@
 Hedgehog Servant
 ================
 ![](https://github.com/felixmulder/hedgehog-servant/workflows/Haskell%20CI/badge.svg)
-![](https://img.shields.io/badge/Hackage-v0.0.0.1-blue.svg)
+![](https://img.shields.io/badge/Hackage-v0.0.1.1-blue.svg)
 
 Hedgehog servant will eat all your servant bugs.
 
